@@ -1,5 +1,5 @@
 const request = require('request')
-var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
+// var XMLHttpRequest = require("xmlhttprequest").XMLHttpRequest;
 
 const {loadImage } = require(`canvas`);
 
@@ -64,20 +64,41 @@ async function init() {
     // console.log('gmetadata: ' + gMetadata)
 
     // Write all Pixel Yetis to channel starting from firstYeti
-    let firstYeti = 1
-    for(let i = firstYeti; i <= currentSupply; i++) {
-        console.log(i)
-        await writeYetiToChannel(i)
-    }
+    // let firstYeti = 1
+    // for(let i = firstYeti; i <= currentSupply; i++) {
+    //     console.log(i)
+    //     await writeYetiToChannel(i)
+    // }
+
+    // Monitor Yetis and write new one to telegram channel when minted.
+    monitorYetis()
+
 }
 
 init()
 
-async function writeYetiToChannel(_tokenId){
+async function monitorYetis(){
     let blockNumber = await getCurrentBlockNumber(true)
+
+    while(true){
+        try{
+            // Wait for next block
+            blockNumber = await awaitNextBlock(blockNumber, 2000);
+
+            if (currentSupply < await await yeti.methods.totalSupply().call()){
+                
+                await writeYetiToChannel(currentSupply + 1)
+                currentSupply++
+            }
+        }catch(err){
+            console.log(err)
+        }
+    }
+}
+
+
+async function writeYetiToChannel(_tokenId){
     try{
-        // Wait for next block
-        blockNumber = await awaitNextBlock(blockNumber, 2000);
 
         let img = process.cwd() + '/NFTs/' + _tokenId + '.png';
         // console.log(await getYetiStats(_tokenId))
@@ -160,7 +181,7 @@ async function awaitNextBlock(_blockNumber, _delay){
 		while(_blockNumber === await getCurrentBlockNumber(false)){
 			wait(_delay);
 		}
-		return getCurrentBlockNumber(false);
+		return getCurrentBlockNumber(true);
 }
 
 // A function that waits ms milliseconds before continuing script execution.
