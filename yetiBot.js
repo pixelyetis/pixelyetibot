@@ -16,7 +16,7 @@ const yetiBot = new TelegramBot(BOT_TOKEN, {polling: false});
 
 
 // Chat IDs
-const channelID = CHATID_KEBAB;
+const channelID = CHANNEL_ID;
 
 
 const Web3 = require('web3');
@@ -65,36 +65,50 @@ async function init() {
 
     // Write all Pixel Yetis to channel starting from firstYeti
     let firstYeti = 1
-    for(let i = firstYeti; i <= await yeti.methods.totalSupply().call(); i++) {await writeYetiToChannel(i)}
+    for(let i = firstYeti; i <= currentSupply; i++) {
+        console.log(i)
+        await writeYetiToChannel(i)
+    }
 }
 
 init()
 
 async function writeYetiToChannel(_tokenId){
     let blockNumber = await getCurrentBlockNumber(true)
-    while(true){
-		try{
-			// Wait for next block
-			blockNumber = await awaitNextBlock(blockNumber, 2000);
+    try{
+        // Wait for next block
+        blockNumber = await awaitNextBlock(blockNumber, 2000);
 
-            // var img = new Image()
-            // let img = await loadImage(`./NFTs/${_tokenId}.png`);
-            let img = process.cwd() + '/NFTs/' + _tokenId + '.png';
-            // img.src('NFTs/' + _tokenId + '.png')
-            console.log(img)
+        let img = process.cwd() + '/NFTs/' + _tokenId + '.png';
+        // console.log(await getYetiStats(_tokenId))
 
-            console.log('Sending message to telegram...')
-            yetiBot.sendMessage(channelID, 'Yeti #' + _tokenId);
-
-            console.log('Sending image to telegram...')
-    		yetiBot.sendPhoto(channelID, img, {caption: 'Pixel Yeti #' + _tokenId});
-            console.log('Pixel Yeti #' + _tokenId)
-        }catch(err){
-            console.log(err)
-        }
+        console.log('Sending image to telegram...')
+        yetiBot.sendPhoto(channelID, img, {caption: await getYetiStats(_tokenId)});
+        
+    }catch(err){
+        console.log(err)
     }
+    
 }
 
+async function getYetiStats(_tokenId) {
+    try{
+        let nftStats= (
+            'Pixel Yeti #' + _tokenId + '\n' + 
+            'Background: ' + await yeti.methods.getBackground(_tokenId).call() + '\n' + 
+            'Skin: ' + await yeti.methods.getSkin(_tokenId).call() + '\n' + 
+            'Fur: ' + await yeti.methods.getFur(_tokenId).call() + '\n' + 
+            'Eyes: ' + await yeti.methods.getEyes(_tokenId).call() + '\n' + 
+            'Horns: ' + await yeti.methods.getHorns(_tokenId).call() + '\n' + 
+            'Mouth: ' + await yeti.methods.getMouth(_tokenId).call()
+        );
+        
+        return nftStats;
+    
+      }catch(err){
+        console.log(err);
+      }
+}
 
 // loadJSON method to open the JSON file.
 async function loadJSON(path, success, error) {
